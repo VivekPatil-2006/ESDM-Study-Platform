@@ -172,6 +172,16 @@ export default function StudentLayout() {
       />
 
       <Drawer.Screen
+        name="videos"
+        options={{
+          title: "Video Lessons",
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="logo-youtube" size={size} color={color} />
+          )
+        }}
+      />
+
+      <Drawer.Screen
         name="quizzes"
         options={{
           title: "Quizzes",

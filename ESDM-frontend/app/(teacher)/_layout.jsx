@@ -129,6 +129,34 @@ function BackToNotesButton() {
   );
 }
 
+function BackToVideosButton() {
+  const router = useRouter();
+
+  return (
+    <TouchableOpacity
+      onPress={() => router.replace("/(teacher)/videos")}
+      style={{ marginLeft: 14, padding: 4 }}
+      activeOpacity={0.7}
+    >
+      <Ionicons name="arrow-back" size={24} color="#ffffff" />
+    </TouchableOpacity>
+  );
+}
+
+function BackToDiagramsButton() {
+  const router = useRouter();
+
+  return (
+    <TouchableOpacity
+      onPress={() => router.replace("/(teacher)/diagrams")}
+      style={{ marginLeft: 14, padding: 4 }}
+      activeOpacity={0.7}
+    >
+      <Ionicons name="arrow-back" size={24} color="#ffffff" />
+    </TouchableOpacity>
+  );
+}
+
 /* ================= MAIN DRAWER ================= */
 
 export default function TeacherLayout() {
@@ -200,6 +228,26 @@ export default function TeacherLayout() {
           title: "Notes",
           drawerIcon: ({ color, size }) => (
             <Ionicons name="document-text-outline" size={size} color={color} />
+          )
+        }}
+      />
+
+      <Drawer.Screen
+        name="videos"
+        options={{
+          title: "Video Links",
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="logo-youtube" size={size} color={color} />
+          )
+        }}
+      />
+
+      <Drawer.Screen
+        name="diagrams"
+        options={{
+          title: "Diagrams",
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="images-outline" size={size} color={color} />
           )
         }}
       />
@@ -289,6 +337,46 @@ export default function TeacherLayout() {
           title: "Create Assignment",
           swipeEnabled: false,
           headerLeft: () => <BackToAssignmentsButton />
+        }}
+      />
+
+      <Drawer.Screen
+        name="create-video"
+        options={{
+          drawerItemStyle: { display: "none" },
+          title: "Create Video",
+          swipeEnabled: false,
+          headerLeft: () => <BackToVideosButton />
+        }}
+      />
+
+      <Drawer.Screen
+        name="video-details"
+        options={{
+          drawerItemStyle: { display: "none" },
+          title: "Video Details",
+          swipeEnabled: false,
+          headerLeft: () => <BackToVideosButton />
+        }}
+      />
+
+      <Drawer.Screen
+        name="create-diagram"
+        options={{
+          drawerItemStyle: { display: "none" },
+          title: "Create Diagram",
+          swipeEnabled: false,
+          headerLeft: () => <BackToDiagramsButton />
+        }}
+      />
+
+      <Drawer.Screen
+        name="diagram-details"
+        options={{
+          drawerItemStyle: { display: "none" },
+          title: "Diagram Details",
+          swipeEnabled: false,
+          headerLeft: () => <BackToDiagramsButton />
         }}
       />
     </Drawer>
