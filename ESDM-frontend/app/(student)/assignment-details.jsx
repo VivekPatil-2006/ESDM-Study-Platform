@@ -7,12 +7,10 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Alert,
-  Platform,
   Modal,
 } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import * as FileSystem from "expo-file-system/legacy";
 import { WebView } from "react-native-webview";
 
 import { fetchStudentAssignmentById } from "../../src/services/assignmentApi";
@@ -27,7 +25,6 @@ export default function StudentAssignmentDetails() {
   const { id } = useLocalSearchParams();
   const [assignment, setAssignment] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [downloadingIndex, setDownloadingIndex] = useState(-1);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewUri, setPreviewUri] = useState("");
   const [previewTitle, setPreviewTitle] = useState("Attachment Preview");
@@ -46,21 +43,6 @@ export default function StudentAssignmentDetails() {
 
     load();
   }, [id]);
-
-  const extensionFromMime = (mimeType = "") => {
-    if (mimeType === "application/pdf") return "pdf";
-    if (mimeType.includes("word")) return "docx";
-    if (mimeType.includes("presentation")) return "pptx";
-    if (mimeType.includes("spreadsheet") || mimeType.includes("excel")) return "xlsx";
-    if (mimeType.includes("jpeg")) return "jpg";
-    if (mimeType.includes("png")) return "png";
-    return "bin";
-  };
-
-  const safeFileName = (name) =>
-    String(name || "assignment_file")
-      .replace(/[^a-zA-Z0-9._-]/g, "_")
-      .slice(0, 80);
 
   const buildPreviewUrl = (file) => {
     const mimeType = String(file?.mimeType || "").toLowerCase();
@@ -98,84 +80,6 @@ export default function StudentAssignmentDetails() {
     setPreviewTitle(file?.name || file?.fileName || `File ${index + 1}`);
     setPreviewUri(previewUrl);
     setPreviewVisible(true);
-  };
-
-  const downloadFile = async (file, index) => {
-    try {
-      setDownloadingIndex(index);
-      const ext = extensionFromMime(file.mimeType);
-      const baseName = safeFileName(file.name || file.fileName);
-      const nameWithExt = baseName.includes(".") ? baseName : `${baseName}.${ext}`;
-
-      // Web/PWA path: trigger browser file download directly.
-      if (Platform.OS === "web") {
-        const downloadFromBlob = (blob) => {
-          const objectUrl = window.URL.createObjectURL(blob);
-          const link = document.createElement("a");
-          link.href = objectUrl;
-          link.download = nameWithExt;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          window.URL.revokeObjectURL(objectUrl);
-        };
-
-        if (file?.data) {
-          const base64 = String(file.data).replace(/\s/g, "");
-          const byteChars = atob(base64);
-          const byteArray = new Uint8Array(byteChars.length);
-          for (let i = 0; i < byteChars.length; i++) {
-            byteArray[i] = byteChars.charCodeAt(i);
-          }
-          const blob = new Blob([byteArray], {
-            type: file?.mimeType || "application/octet-stream",
-          });
-          downloadFromBlob(blob);
-        } else if (file?.fileUrl) {
-          const response = await fetch(file.fileUrl);
-          if (!response.ok) {
-            throw new Error("Unable to fetch file for download");
-          }
-          const blob = await response.blob();
-          downloadFromBlob(blob);
-        } else {
-          throw new Error("No attachment content found");
-        }
-
-        Alert.alert("Downloaded", "File download has started in your browser");
-        return;
-      }
-
-      const rootDir = FileSystem.documentDirectory || FileSystem.cacheDirectory;
-      if (!rootDir) {
-        throw new Error("No writable directory available");
-      }
-
-      const folder = `${rootDir}assignments/`;
-      const folderInfo = await FileSystem.getInfoAsync(folder);
-      if (!folderInfo.exists) {
-        await FileSystem.makeDirectoryAsync(folder, { intermediates: true });
-      }
-
-      const path = `${folder}${Date.now()}_${nameWithExt}`;
-
-      if (file?.data) {
-        await FileSystem.writeAsStringAsync(path, file.data, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-      } else if (file?.fileUrl) {
-        await FileSystem.downloadAsync(file.fileUrl, path);
-      } else {
-        throw new Error("No attachment content found");
-      }
-
-      Alert.alert("Downloaded", `File saved locally to app storage:\n${path}`);
-    } catch (error) {
-      console.log("Download error:", error);
-      Alert.alert("Download Failed", error?.message || "Unable to save file locally");
-    } finally {
-      setDownloadingIndex(-1);
-    }
   };
 
   if (loading) {
@@ -248,21 +152,6 @@ export default function StudentAssignmentDetails() {
                   <Text style={styles.fileType} numberOfLines={1}>{file.mimeType || "application/octet-stream"}</Text>
                 </View>
               </View>
-
-              <TouchableOpacity
-                style={styles.downloadBtn}
-                onPress={() => downloadFile(file, index)}
-                disabled={downloadingIndex === index}
-              >
-                {downloadingIndex === index ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <>
-                    <Ionicons name="download-outline" size={16} color="#fff" />
-                    <Text style={styles.downloadText}>Download</Text>
-                  </>
-                )}
-              </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.viewBtn}

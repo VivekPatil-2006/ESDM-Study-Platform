@@ -127,6 +127,7 @@ android {
             useLegacyPackaging enableLegacyPackaging.toBoolean()
         }
     }
+    // ABI splits removed to avoid CMake/codegen build issues on this workspace.
     androidResources {
         ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
     }

@@ -4,6 +4,7 @@ import {
   Alert,
   Image,
   Linking,
+  Modal,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -13,6 +14,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
+import { WebView } from "react-native-webview";
 
 import { fetchStudentDiagrams } from "../../src/services/diagramApi";
 
@@ -28,6 +30,9 @@ export default function Diagrams() {
   const [diagrams, setDiagrams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [viewerVisible, setViewerVisible] = useState(false);
+  const [viewerUri, setViewerUri] = useState("");
+  const [viewerTitle, setViewerTitle] = useState("");
 
   const loadDiagrams = async () => {
     try {
@@ -48,6 +53,13 @@ export default function Diagrams() {
       loadDiagrams();
     }, [])
   );
+
+  const openDiagram = (item) => {
+    const mimeType = item.imageMimeType || "image/jpeg";
+    setViewerTitle(item.title || "Diagram Preview");
+    setViewerUri(`data:${mimeType};base64,${item.imageData}`);
+    setViewerVisible(true);
+  };
 
   if (loading) {
     return (
@@ -84,11 +96,17 @@ export default function Diagrams() {
 
           return (
             <View key={item._id} style={styles.card}>
-              <Image
-                source={{ uri: `data:${item.imageMimeType || "image/jpeg"};base64,${item.imageData}` }}
-                style={styles.diagramImage}
-                resizeMode="cover"
-              />
+              <TouchableOpacity activeOpacity={0.9} onPress={() => openDiagram(item)}>
+                <Image
+                  source={{ uri: `data:${item.imageMimeType || "image/jpeg"};base64,${item.imageData}` }}
+                  style={styles.diagramImage}
+                  resizeMode="cover"
+                />
+                <View style={styles.zoomHint}>
+                  <Ionicons name="resize-outline" size={16} color="#fff" />
+                  <Text style={styles.zoomHintText}>Tap to view full screen</Text>
+                </View>
+              </TouchableOpacity>
 
               <View style={styles.cardBody}>
                 <Text style={styles.title}>{item.title}</Text>
@@ -120,6 +138,82 @@ export default function Diagrams() {
           );
         })
       )}
+
+      <Modal
+        visible={viewerVisible}
+        animationType="slide"
+        onRequestClose={() => setViewerVisible(false)}
+      >
+        <View style={styles.viewerContainer}>
+          <View style={styles.viewerHeader}>
+            <TouchableOpacity
+              onPress={() => setViewerVisible(false)}
+              style={styles.viewerCloseBtn}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="arrow-back" size={24} color="#0f172a" />
+            </TouchableOpacity>
+            <Text style={styles.viewerTitle} numberOfLines={1}>
+              {viewerTitle}
+            </Text>
+            <View style={styles.viewerHeaderSpacer} />
+          </View>
+
+          {viewerUri ? (
+            <View style={styles.viewerWebWrap}>
+              <WebView
+                source={{
+                  html: `
+                    <!doctype html>
+                    <html>
+                      <head>
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=1.0, user-scalable=yes" />
+                        <style>
+                          html, body {
+                            margin: 0;
+                            padding: 0;
+                            width: 100%;
+                            height: 100%;
+                            background: #0f172a;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            overflow: auto;
+                          }
+                          img {
+                            max-width: 100%;
+                            height: auto;
+                            object-fit: contain;
+                            -webkit-user-select: none;
+                            user-select: none;
+                          }
+                        </style>
+                      </head>
+                      <body>
+                        <img src="${viewerUri}" />
+                      </body>
+                    </html>
+                  `,
+                }}
+                originWhitelist={["*"]}
+                style={styles.webview}
+                javaScriptEnabled
+                domStorageEnabled
+                startInLoadingState
+                renderLoading={() => (
+                  <View style={styles.center}>
+                    <ActivityIndicator size="large" color="#2563eb" />
+                  </View>
+                )}
+              />
+            </View>
+          ) : (
+            <View style={styles.center}>
+              <Text style={styles.emptyText}>Unable to load image</Text>
+            </View>
+          )}
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -173,6 +267,23 @@ const styles = StyleSheet.create({
     height: 190,
     backgroundColor: "#e2e8f0",
   },
+  zoomHint: {
+    position: "absolute",
+    left: 12,
+    bottom: 12,
+    backgroundColor: "rgba(15,23,42,0.78)",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  zoomHintText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700",
+  },
   cardBody: {
     padding: 12,
   },
@@ -225,5 +336,45 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
     fontSize: 12,
+  },
+  viewerContainer: {
+    flex: 1,
+    backgroundColor: "#0f172a",
+  },
+  viewerHeader: {
+    height: 64,
+    backgroundColor: "#fff",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    justifyContent: "space-between",
+  },
+  viewerCloseBtn: {
+    width: 36,
+    height: 36,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 18,
+    backgroundColor: "#f1f5f9",
+  },
+  viewerTitle: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#0f172a",
+    marginHorizontal: 12,
+  },
+  viewerHeaderSpacer: {
+    width: 36,
+    height: 36,
+  },
+  viewerWebWrap: {
+    flex: 1,
+    backgroundColor: "#0f172a",
+  },
+  webview: {
+    flex: 1,
+    backgroundColor: "#0f172a",
   },
 });

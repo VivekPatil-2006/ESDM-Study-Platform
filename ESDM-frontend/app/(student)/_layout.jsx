@@ -218,9 +218,6 @@ export default function StudentLayout() {
             <Ionicons name="log-out-outline" size={size} color={color} />
           )
         }}
-        listeners={{
-          focus: () => router.replace("/login")
-        }}
       />
 
       <Drawer.Screen

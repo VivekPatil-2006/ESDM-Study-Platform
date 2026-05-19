@@ -8,9 +8,7 @@ export default function Logout() {
 
   useEffect(() => {
     const logout = async () => {
-      await AsyncStorage.removeItem("token");
-      await AsyncStorage.removeItem("role");
-      await AsyncStorage.removeItem("user");
+      await AsyncStorage.multiRemove(["token", "role", "user", "profileImage"]);
       router.replace("/login");
     };
     logout();

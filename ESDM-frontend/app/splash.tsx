@@ -18,6 +18,12 @@ export default function Splash() {
   const progressAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    const prepareSplash = async () => {
+      await SplashScreen.hideAsync();
+    };
+
+    prepareSplash();
+
     // Logo entrance animation
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -70,8 +76,7 @@ export default function Splash() {
     }).start();
 
     // Navigate after delay
-    const timer = setTimeout(async () => {
-      await SplashScreen.hideAsync();
+    const timer = setTimeout(() => {
       router.replace("/login");
     }, 5000);
 
